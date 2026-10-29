@@ -1,0 +1,48 @@
+version: 2
+models:
+  - name: fct_transactions
+    description: Posted transactions with customer/branch context. Incremental with a 3-day late-arrival lookback.
+    columns:
+      - name: transaction_id
+        tests: [unique, not_null]
+      - name: customer_id
+        tests:
+          - relationships:
+              arguments: {to: ref('dim_customers'), field: customer_id}
+  - name: dim_customers
+    description: Customer 360. One row per customer with product holdings and activity.
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+      - name: products_held
+        tests: [non_negative]
+      - name: age_band
+        tests:
+          - accepted_values:
+              arguments: {values: ['18-34', '35-54', '55+', 'unknown']}
+  - name: mart_branch_monthly_kpis
+    description: Branch x month KPIs feeding the executive dashboard.
+    tests:
+      - dbt_utils_unique_combination:
+          arguments:
+            combination: "transaction_month || branch_code"
+    columns:
+      - name: inflow
+        tests: [non_negative]
+      - name: digital_share
+        tests: [not_null]
+  - name: mart_category_spend_monthly
+    description: Spend by month, segment and category (debits only).
+    columns:
+      - name: spend
+        tests: [non_negative]
+
+exposures:
+  - name: executive_dashboard
+    type: dashboard
+    owner: {name: Sheriff}
+    description: Streamlit dashboard of branch and customer KPIs.
+    depends_on:
+      - ref('mart_branch_monthly_kpis')
+      - ref('mart_category_spend_monthly')
+      - ref('dim_customers')

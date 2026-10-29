@@ -1,0 +1,53 @@
+version: 2
+models:
+  - name: stg_branches
+    columns:
+      - name: branch_code
+        tests: [unique, not_null]
+  - name: stg_customers
+    description: Deduplicated, typed customers.
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+      - name: segment
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['mass', 'affluent', 'private', 'small_business']
+      - name: home_branch_code
+        tests:
+          - relationships:
+              arguments: {to: ref('stg_branches'), field: branch_code}
+  - name: stg_accounts
+    columns:
+      - name: account_id
+        tests: [unique, not_null]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('stg_customers'), field: customer_id}
+      - name: product_type
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['chequing', 'savings', 'credit_card', 'line_of_credit']
+      - name: credit_limit
+        tests: [non_negative]
+  - name: stg_transactions
+    columns:
+      - name: transaction_id
+        tests: [unique, not_null]
+      - name: account_id
+        tests:
+          - relationships:
+              arguments: {to: ref('stg_accounts'), field: account_id}
+      - name: status
+        tests:
+          - accepted_values:
+              arguments: {values: ['posted', 'pending', 'reversed']}
+      - name: category
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['groceries', 'dining', 'travel', 'utilities', 'transfer', 'payroll', 'retail', 'fees']

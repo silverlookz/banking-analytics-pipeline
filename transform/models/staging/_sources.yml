@@ -1,0 +1,12 @@
+version: 2
+sources:
+  - name: raw
+    description: Landed source extracts (all columns as text, untouched).
+    schema: raw
+    tables:
+      - name: branches
+      - name: customers
+        description: CRM extract. Contains duplicate rows from re-syncs.
+      - name: accounts
+      - name: transactions
+        loaded_at_field: "cast(_loaded_at as timestamp)"
